@@ -25,7 +25,7 @@ var sqlite3Context = function (connectionString, cached) {
 
             var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
             query.all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
                 for (var i in rows) {
                     if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
                         continue;
@@ -161,7 +161,7 @@ var sqlite3Context = function (connectionString, cached) {
     var createMappings = function () {
         var query = database.prepare("SELECT name FROM sqlite_master WHERE type='table'");
         query.all(function (err, rows) {
-            if (err) throw err;
+            if (err) sqlite3Context.emit("error", err);
             for (var i in rows) {
                 if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
                     continue;
@@ -177,7 +177,7 @@ var sqlite3Context = function (connectionString, cached) {
     var tableExists = this.tableExists = function (tableName, callback) {
         var query = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?", tableName);
         query.all(function (err, row) {
-            if (err) throw err;
+            if (err) sqlite3Context.emit("error", err);
             if (!row || !row[0] || !row[0].name) {
                 if (callback) callback(false);
                 return;
@@ -194,7 +194,7 @@ var sqlite3Context = function (connectionString, cached) {
         }
 
         chain[index].run().finalize(function (err) {
-            if (err) throw err;
+            if (err) sqlite3Context.emit("error", err);
             ensure(chain, index + 1, callback);
         });
     }
@@ -218,14 +218,14 @@ var sqlite3Context = function (connectionString, cached) {
             }
 
             database.prepare("INSERT INTO '" + tableName + "' (" + columns + ") VALUES (" + values + ")").run(value, function (err) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
                 if (callback) callback();
             });
         }
 
         var remove = this.remove = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
                 for (var i in rows) {
@@ -241,7 +241,7 @@ var sqlite3Context = function (connectionString, cached) {
                         }
 
                         database.prepare("DELETE FROM '" + tableName + "' WHERE " + clause).run(function (err) {
-                            if (err) throw err;
+                            if (err) sqlite3Context.emit("error", err);
                             if (callback) callback(true);
                         });
                     }
@@ -255,7 +255,7 @@ var sqlite3Context = function (connectionString, cached) {
 
         var first = this.first = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
                 for (var i in rows) {
@@ -274,7 +274,7 @@ var sqlite3Context = function (connectionString, cached) {
 
         var last = this.last = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
 
                 var list = [];
                 for (var i in rows) {
@@ -289,7 +289,7 @@ var sqlite3Context = function (connectionString, cached) {
 
         var where = this.where = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
 
                 var list = [];
                 for (var i in rows) {
@@ -304,7 +304,7 @@ var sqlite3Context = function (connectionString, cached) {
 
         var count = this.count = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
 
                 var index = 0;
                 for (var i in rows) {
@@ -319,14 +319,14 @@ var sqlite3Context = function (connectionString, cached) {
 
         var all = this.all = function (callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
         };
 
         var only = this.only = function (columns, callback) {
             database.prepare("SELECT " + columns + " FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) throw err;
+                if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
         };
@@ -341,7 +341,7 @@ var sqlite3Context = function (connectionString, cached) {
 
             //var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
             //query.all(function (err, rows) {
-                //if (err) throw err;
+                //if (err) sqlite3Context.emit("error", err);
 
                 //var filteredTables = [];
                 //for (var i in rows) {
@@ -356,7 +356,7 @@ var sqlite3Context = function (connectionString, cached) {
                 //var migrationNeeded = false;
                 //for (var i in filteredTables) {
                     //database.prepare("SELECT name, hash, salt FROM entities_master WHERE name=?", filteredTables[i].name).all(function (err, row) {
-                        //if (err) throw err;
+                        //if (err) sqlite3Context.emit("error", err);
                         //if (tables[i].name == row[0].name) {
                             //var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", filteredTables[i].sql, row[0].salt);
                             //if (hmac.Data.toString() != row[0].hash) {

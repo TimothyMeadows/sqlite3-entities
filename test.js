@@ -33,3 +33,7 @@ context.on("ready", function () {
         });
     });
 });
+
+context.on("error", function(err) {
+    console.log(err);
+})
