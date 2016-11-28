@@ -214,7 +214,6 @@ var sqlite3Context = function (connectionString) {
 
             database.prepare("INSERT INTO '" + tableName + "' (" + columns + ") VALUES (" + values + ")").run(value, function (err) {
                 if (err) throw err;
-                sqlite3Context.emit("row_added", row);
                 if (callback) callback();
             });
         }
@@ -223,25 +222,28 @@ var sqlite3Context = function (connectionString) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
+                var conditioned = false;
                 for (var i in rows) {
                     if (condition(rows[i])) {
-                        // DELETE FROM '' WHERE col = 'value'
+                        conditioned = true;
                         var clause = "";
                         for (var n in rows[i]) {
                             if (clause == "") {
-                                clause = n + " = \"" + rows[i][n] + "\""
+                                clause = n + " = '" + rows[i][n] + "'"
                             } else {
-                                clause += " AND " + n + " = \"" + rows[i][n] + "\"";
+                                clause += " AND " + n + " = '" + rows[i][n] + "'";
                             }
                         }
 
-                        console.log(clause);
-                        //database.prepare("DELETE FROM '" + tableName + "' WHERE col = 'value'").run(value, function (err) {
-                            //if (err) throw err;
-                            //sqlite3Context.emit("row_added");
-                            //if (callback) callback();
-                        //});
+                        database.prepare("DELETE FROM '" + tableName + "' WHERE " + clause).run(function (err) {
+                            if (err) throw err;
+                            if (callback) callback(true);
+                        });
                     }
+                }
+
+                if (!conditioned) {
+                    if (callback) callback(false);
                 }
             });
         }

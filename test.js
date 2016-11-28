@@ -7,8 +7,8 @@ context.table("test_table", {
     active: false,
     created: 0
 }, {
-    uid: { unique: true },
-});
+        uid: { unique: true },
+    });
 
 context.table("test_table2", {
     id: 0
@@ -22,10 +22,12 @@ context.on("ready", function () {
     console.log("database is ready!");
     console.log(context);
 
-    context.test_table.remove((t) => t.uid == "test123");
-    //context.test_table.add({
-        //uid: "test123",
-        //active: true,
-        //created: 1001
-    //});
+    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
+        if (deleted) console.log("row removed!");
+        context.test_table.add({
+            uid: "test123",
+            active: true,
+            created: 1001
+        });
+    });
 });
