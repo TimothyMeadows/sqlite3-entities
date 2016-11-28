@@ -40,10 +40,14 @@ var sqlite3Context = function (connectionString) {
         });
     };
 
-    var table = this.table = function (name, model, mapping) {
+    var table = this.table = function (name, model, mapping, primary) {
         var tableObject = { name: name, scheme: model };
         if (mapping) {
             tableObject.mapping = mapping;
+        }
+
+        if (primary) {
+            tableObject.primary = primary;
         }
 
         tables.push(tableObject);
@@ -252,11 +256,17 @@ var sqlite3Context = function (connectionString) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
+                var conditioned = false;
                 for (var i in rows) {
                     if (condition(rows[i])) {
+                        conditioned = true;
                         if (callback) callback(rows[i]);
                         break;
                     }
+                }
+
+                if (!conditioned) {
+                    if (callback) callback(null);
                 }
             });
         }

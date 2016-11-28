@@ -7,8 +7,8 @@ context.table("test_table", {
     active: false,
     created: 0
 }, {
-        uid: { unique: true },
-    });
+    uid: { unique: true },
+});
 
 context.table("test_table2", {
     id: 0
