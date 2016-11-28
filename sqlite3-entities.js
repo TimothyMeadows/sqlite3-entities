@@ -41,7 +41,7 @@ var sqlite3Context = function (connectionString) {
     };
 
     var table = this.table = function (name, model, mapping) {
-        var tableObject = {name: name, scheme: model};
+        var tableObject = { name: name, scheme: model };
         if (mapping) {
             tableObject.mapping = mapping;
         }
@@ -212,15 +212,42 @@ var sqlite3Context = function (connectionString) {
                 value.push(row[column]);
             }
 
-            db.prepare("INSERT INTO '" + tableName + "' (" + columns + ") VALUES (" + values + ")").run(value, function (err) {
+            database.prepare("INSERT INTO '" + tableName + "' (" + columns + ") VALUES (" + values + ")").run(value, function (err) {
                 if (err) throw err;
-                sqlite3Context.emit("row_added");
+                sqlite3Context.emit("row_added", row);
                 if (callback) callback();
             });
         }
 
+        var remove = this.remove = function (condition, callback) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+                if (err) throw err;
+
+                for (var i in rows) {
+                    if (condition(rows[i])) {
+                        // DELETE FROM '' WHERE col = 'value'
+                        var clause = "";
+                        for (var n in rows[i]) {
+                            if (clause == "") {
+                                clause = n + " = \"" + rows[i][n] + "\""
+                            } else {
+                                clause += " AND " + n + " = \"" + rows[i][n] + "\"";
+                            }
+                        }
+
+                        console.log(clause);
+                        //database.prepare("DELETE FROM '" + tableName + "' WHERE col = 'value'").run(value, function (err) {
+                            //if (err) throw err;
+                            //sqlite3Context.emit("row_added");
+                            //if (callback) callback();
+                        //});
+                    }
+                }
+            });
+        }
+
         var first = this.first = function (condition, callback) {
-            db.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
                 for (var i in rows) {
@@ -233,7 +260,7 @@ var sqlite3Context = function (connectionString) {
         }
 
         var last = this.last = function (condition, callback) {
-            db.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
                 var list = [];
@@ -248,7 +275,7 @@ var sqlite3Context = function (connectionString) {
         }
 
         var where = this.where = function (condition, callback) {
-            db.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
                 var list = [];
@@ -263,7 +290,7 @@ var sqlite3Context = function (connectionString) {
         }
 
         var count = this.count = function (condition, callback) {
-            db.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
 
                 var index = 0;
@@ -278,14 +305,14 @@ var sqlite3Context = function (connectionString) {
         }
 
         var all = this.all = function (callback) {
-            db.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
                 if (callback) callback(rows);
             });
         };
 
         var only = this.only = function (columns, callback) {
-            db.prepare("SELECT " + columns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + columns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) throw err;
                 if (callback) callback(rows);
             });
@@ -299,43 +326,45 @@ var sqlite3Context = function (connectionString) {
                 return;
             }
 
-            var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
-            query.all(function (err, rows) {
-                if (err) throw err;
+            //var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
+            //query.all(function (err, rows) {
+                //if (err) throw err;
 
-                var tables = [];
-                for (var i in rows) {
-                    if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
-                        continue;
-                    }
+                //var filteredTables = [];
+                //for (var i in rows) {
+                    //if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
+                        //continue;
+                    //}
 
-                    tables.push(rows[i]);
-                }
+                    //filteredTables.push(rows[i]);
+                //}
 
-                var checkedIn = 0;
-                var migrationNeeded = false;
-                for (var i in tables) {
-                    database.prepare("SELECT name, hash, salt FROM entities_master WHERE name=?", tables[i].name).all(function (err, row) {
-                        if (err) throw err;
-                        if (tables[i].name == row[0].name) {
-                            var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", tables[i].sql, row[0].salt);
-                            if (hmac.Data.toString() != row[0].hash) {
-                                migrationNeeded = true;
-                            }
+                //var checkedIn = 0;
+                //var migrationNeeded = false;
+                //for (var i in filteredTables) {
+                    //database.prepare("SELECT name, hash, salt FROM entities_master WHERE name=?", filteredTables[i].name).all(function (err, row) {
+                        //if (err) throw err;
+                        //if (tables[i].name == row[0].name) {
+                            //var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", filteredTables[i].sql, row[0].salt);
+                            //if (hmac.Data.toString() != row[0].hash) {
+                                //migrationNeeded = true;
+                            //}
 
-                            checkedIn++;
-                            if (checkedIn == tables.length) {
-                                if (migrationNeeded) {
-                                    console.log("ERROR! Database has been modified and is no longer considered sane. Recreating...")
-                                    seed();
-                                } else {
-                                    createMappings();
-                                }
-                            }
-                        }
-                    });
-                }
-            });
+                            //checkedIn++;
+                            //if (checkedIn == filteredTables.length) {
+                                //if (migrationNeeded) {
+                                    //console.log("ERROR! Database has been modified and is no longer considered sane. Recreating...")
+                                    //seed();
+                                //} else {
+                                    //createMappings();
+                                //}
+                            //}
+                        //}
+                    //});
+                //}
+            //});
+
+            createMappings();
         });
     }, 1);
 
