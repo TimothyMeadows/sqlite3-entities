@@ -3,11 +3,12 @@ var sqlite3 = require('sqlite3').verbose(),
     util = require('util'),
     Blackfeather = require('Blackfeather');
 
-var sqlite3Context = function (connectionString) {
+var sqlite3Context = function (connectionString, cached) {
     var sqlite3Context = this;
-    var database = this.database = new sqlite3.cached.Database(connectionString);
+    var database = this.database = cached == true ? new sqlite3.cached.Database(connectionString) : new sqlite3.Database(connectionString);
     var seeder = [];
     var tables = [];
+
     var created = this.created = false;
 
     var seed = function () {

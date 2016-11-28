@@ -1,5 +1,5 @@
 var databaseContext = require('./sqlite3-entities');
-var context = new databaseContext("test.db");
+var context = new databaseContext("test.db", true);
 
 context.table("test_table", {
     id: 0,
@@ -28,6 +28,8 @@ context.on("ready", function () {
             uid: "test123",
             active: true,
             created: 1001
+        }, function() {
+            console.log("row added!")
         });
     });
 });
