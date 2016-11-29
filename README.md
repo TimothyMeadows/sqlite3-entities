@@ -1,13 +1,13 @@
-# SQLite 3 Async Entities in JavaScript / Node.js
+-# SQLite 3 Async Entities in JavaScript / Node.js
 #Installing
 ##Browser
 ```html
-  <script src="sqlite3entities.js"></script>
+  <script src="sqlite3-entities.js"></script>
 ```
 ##Node.js
 ###https://www.npmjs.com/package/sqlite3entities
 ```bash
-  npm install sqlite3entities --save
+  npm install sqlite3-entities --save
 ```
 ##Source
 ```bash
