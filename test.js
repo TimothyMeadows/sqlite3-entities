@@ -15,9 +15,8 @@ context.table("test_table2", {
 });
 
 context.on("ready", function () {
-    if (context.created) {
-        console.log("database was created!");
-    }
+    if (context.migrated) console.log("database was migrated!");
+    if (context.created) console.log("database was created!");
 
     console.log("database is ready!");
     console.log(context);
@@ -29,11 +28,14 @@ context.on("ready", function () {
             active: true,
             created: 1001
         }, function() {
-            console.log("row added!")
+            console.log("row added!");
+            context.test_table.where((t) => t.created == 1001 && t.active, function(row) {
+                console.log(row);
+            })
         });
     });
 });
 
 context.on("error", function(err) {
     console.log(err);
-})
+});

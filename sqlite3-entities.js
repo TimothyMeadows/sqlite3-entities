@@ -16,6 +16,7 @@ var sqlite3Context = function (connectionString, cached) {
     };
     var migration = this.migration = migrationPlan.HaltOnChange;
     var created = this.created = false;
+    var migrated = this.migrated = false;
 
     var seed = function () {
         seeder.push(database.prepare("DROP TABLE IF EXISTS 'entities_master'"));
@@ -396,6 +397,8 @@ var sqlite3Context = function (connectionString, cached) {
         };
 
         var executeMigration = function() {
+            sqlite3Context.migrated = true;
+
             switch (migrate) {
                 case migrationPlan.HaltOnChange:
                     throw "A table, or, model has been changed, and, no longer valid.";
