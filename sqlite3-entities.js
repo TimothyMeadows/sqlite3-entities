@@ -9,12 +9,13 @@ var sqlite3Context = function (connectionString, cached) {
     var seeder = [];
     var tables = [];
 
-    var created = this.created = false;
     var migrationPlan = this.migrationPlan = {
         HaltOnChange: 0,
-        DropOnChange: 1,
+        CreateOnChange: 1,
         AlterOnChange: 2
     };
+    var migration = this.migration = migrationPlan.HaltOnChange;
+    var created = this.created = false;
 
     var seed = function () {
         seeder.push(database.prepare("DROP TABLE IF EXISTS 'entities_master'"));
@@ -394,6 +395,18 @@ var sqlite3Context = function (connectionString, cached) {
             });
         };
 
+        var executeMigration = function() {
+            switch (migrate) {
+                case migrationPlan.HaltOnChange:
+                    throw "A table, or, model has been changed, and, no longer valid.";
+                case migrationPlan.CreateOnChange:
+                    seed();
+                    break;
+                case migrationPlan.AlterOnChange:
+                    throw "This migration action has not been created yet!";
+            }
+        };
+
         comparePhysicalMigration(function (valid) {
             if (valid) {
                 physicalMigrationValid = true;
@@ -404,7 +417,7 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            console.log("Physical tables have been changed. Migration response needed.");
+            executeMigration();
         });
 
         compareModelMigration(function (valid) {
@@ -417,7 +430,7 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            console.log("Models have been changed. Migration response needed.");
+            executeMigration();
         })
     }
 
