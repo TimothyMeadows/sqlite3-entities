@@ -5,7 +5,7 @@
   <script src="sqlite3-entities.js"></script>
 ```
 ##Node.js
-###https://www.npmjs.com/package/sqlite3entities
+###https://www.npmjs.com/package/sqlite3-entities
 ```bash
   npm install sqlite3-entities --save
 ```
