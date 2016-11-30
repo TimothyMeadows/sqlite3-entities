@@ -8,7 +8,7 @@ context.table("test_table", {
     created: 0
 }, {
     uid: { unique: true },
-    foreign: {table:"test_table2", column: "id"}
+    id2: {foreign:{table:"test_table2", column: "id"}}
 });
 
 context.table("test_table2", {
