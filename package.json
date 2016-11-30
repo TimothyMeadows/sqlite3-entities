@@ -1,13 +1,18 @@
 {
   "name": "sqlite3-entities",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "license": "MIT",
   "author": "Timothy D Meadows II <timothy@timothymeadows.com>",
-  "description": "SQLite 3 Asynchronistic Entity Framework in JavaScript / Node.js.",
+  "description": "SQLite 3 Async Entities in JavaScript / Node.js",
   "engines": {
     "node": ">=0.10.0"
   },
   "dependencies": {
     "Blackfeather": "^1.0.1",
     "sqlite3": "^3.1.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TimothyMeadows/sqlite3-entities"
   }
 }
