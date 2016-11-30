@@ -1,4 +1,4 @@
--# SQLite 3 Async Entities in JavaScript / Node.js
+# SQLite 3 Async Entities in JavaScript / Node.js
 #Installing
 ##Browser
 ```html
