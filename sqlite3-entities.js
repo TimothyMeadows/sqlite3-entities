@@ -9,12 +9,14 @@ var sqlite3Context = function (connectionString, cached) {
     var seeder = [];
     var tables = [];
 
-    var migrationPlan = this.migrationPlan = {
+    var autoMigrationPlan = this.autoMigrationPlan = {
         HaltOnChange: 0,
-        CreateOnChange: 1,
+        DropCreateOnChange: 1,
         AlterOnChange: 2
     };
-    var migration = this.migration = migrationPlan.HaltOnChange;
+
+    var autoMigration = this.autoMigration = autoMigrationPlan.HaltOnChange;
+    var useAutoMigration = true;
     var created = this.created = false;
     var migrated = this.migrated = false;
 
@@ -396,10 +398,9 @@ var sqlite3Context = function (connectionString, cached) {
             });
         };
 
-        var executeMigration = function() {
+        var executeAutoMigration = function() {
             sqlite3Context.migrated = true;
-
-            switch (migrate) {
+            switch (autoMigration) {
                 case migrationPlan.HaltOnChange:
                     throw "A table, or, model has been changed, and, no longer valid.";
                 case migrationPlan.CreateOnChange:
@@ -420,7 +421,8 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            executeMigration();
+            if (useAutoMigration) return executeAutoMigration();
+            sqlite3Context.emit("migration");
         });
 
         compareModelMigration(function (valid) {
@@ -433,7 +435,8 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            executeMigration();
+            if (useAutoMigration) return executeAutoMigration();
+            sqlite3Context.emit("migration");
         })
     }
 

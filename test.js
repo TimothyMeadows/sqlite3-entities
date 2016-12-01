@@ -1,5 +1,7 @@
 var databaseContext = require('./sqlite3-entities');
 var context = new databaseContext("test.db", true);
+context.autoMigration = context.autoMigrationPlan.DropCreateOnChange;
+context.useAutoMigration = true;
 
 context.table("test_table", {
     id: 0,
