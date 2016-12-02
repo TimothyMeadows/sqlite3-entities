@@ -13,7 +13,7 @@
 I felt it was important that tables could be defined in it's simplest form in a standard object notation. While complex mapping / indexing might be needed at a more advanced level. It didn't have to be "in your face" at all times. Types are inferred by there value. However, those values are not actually treated as defaults. This may change in the future. Similar to other ORM / Entity style frameworks. I wanted advanced "mapping" to be handeled in it's own object allowing for table objects, and, matching map objects when needed.
 
 ```javascript
-  var databaseContext = require('./sqlite3-entities');
+  var databaseContext = require('sqlite3-entities');
   var context = new databaseContext("test.db", { cached: true, autoMigration: true });
   context.table("test_table", {
     id: 0,
@@ -26,7 +26,7 @@ I felt it was important that tables could be defined in it's simplest form in a 
 Numbers, and, Boolean are treated as INTEGER. String, and, object are treated as TEXT, array is treated as a BLOB. Default for unknown types is BLOB. Should you need. You can override a inferred type for a column using a custom mapping.
 
 ```javascript
-  var databaseContext = require('./sqlite3-entities');
+  var databaseContext = require('sqlite3-entities');
   var context = new databaseContext("test.db", { cached: true, autoMigration: true });
   context.table("test_table", {
     id: 0,
@@ -42,7 +42,7 @@ The primary key is automatically determined using the first property in the obje
 
 
 ```javascript
-  var databaseContext = require('./sqlite3-entities');
+  var databaseContext = require('sqlite3-entities');
   var context = new databaseContext("test.db", { cached: true, autoMigration: true });
   context.table("test_table", {
     id: 0,
@@ -58,7 +58,7 @@ The primary key is automatically determined using the first property in the obje
 Finally, Foreign keys, and, unqiue constraints can be declared using the mapping object. Current direct entity mapping via the table model is not supported. But it will be a future upgrade when time permits.
 
 ```javascript
-var databaseContext = require('./sqlite3-entities');
+var databaseContext = require('sqlite3-entities');
 var context = new databaseContext("test.db", { cached: true, autoMigration: true });
 context.table("test_table", {
     id: 0,
@@ -79,7 +79,7 @@ context.table("test_table2", {
 In the unfortunite event an exception occurs. You can use the error event to listen for what occured. More importantly, you will need to listen for the ready event before you can access entities you would like to use. This is due to the pure async nature of the library. Additionally, you can use the migrated, and, created properties to determine if the data was just created, or, migrated and may be in need of seeding.
 
 ```javascript
-var databaseContext = require('./sqlite3-entities');
+var databaseContext = require('sqlite3-entities');
 var context = new databaseContext("test.db", { cached: true, autoMigration: true });
 context.on("ready", function () {
     if (context.migrated) console.log("database was migrated!");
@@ -106,7 +106,7 @@ context.on("ready", function () {
 Automatic migration (halt, drop & create) support exists with exception to automatic alter table migrations (comming soon). Manual migrations also exist but do not support versioning so there is only "up" and no "down" (coming soon) unless you add it yourself.
 
 ```javascript
-var databaseContext = require('./sqlite3-entities');
+var databaseContext = require('sqlite3-entities');
 var context = new databaseContext("test.db", { cached: true, autoMigration: false });
 
 context.table("test_table", {
@@ -176,7 +176,7 @@ All table mappings support async based execution chains. However, due to the asy
 Chained execution passed the first table mapping execution (I.E. the results returned from async) are synchronis, they can be chained, and, do include results from the previous exection.
 
 ```javascript
-var databaseContext = require('./sqlite3-entities');
+var databaseContext = require('sqlite3-entities');
 var context = new databaseContext("test.db", { cached: true, autoMigration: true });
 
 context.table("test_table", {
