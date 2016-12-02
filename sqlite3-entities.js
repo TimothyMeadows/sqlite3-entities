@@ -55,17 +55,26 @@ var sqlite3Context = function (connectionString, options) {
         tables.push(tableObject);
     }
 
+    var inferType = function (value) {
+        if (typeof value == "boolean") return "INTEGER";
+        if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return "INTEGER";
+        if (typeof value == "string") return "TEXT";
+        if (typeof value == "object") return "TEXT";
+        if (typeof value == "array") return "TEXT";
+        return "BLOB";
+    }
+
+    var inferDefault = function(value) {
+        if (typeof value == "boolean") return false;
+        if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return 0;
+        if (typeof value == "string") return "";
+        if (typeof value == "object") return {};
+        if (typeof value == "array") return [];
+        return null;
+    }
+
     var createTable = function (tableModel) {
         if (!tableModel["name"] || !tableModel["scheme"]) throw "Invalid table model!";
-
-        var inferType = function (value) {
-            if (typeof value == "boolean") return "INTEGER";
-            if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return "INTEGER";
-            if (typeof value == "string") return "TEXT";
-            if (typeof value == "object") return "TEXT";
-            if (typeof value == "array") return "TEXT";
-            return "BLOB";
-        }
 
         var createTableProperty = function (name, value, mapping) {
             var property = name + " ";
@@ -210,7 +219,11 @@ var sqlite3Context = function (connectionString, options) {
             if (tableName == tables[i].name) {
                 rowEntity = {};
                 for (var o in tables[i].scheme) {
-                    if (row.hasOwnProperty(o)) rowEntity[o] = row[o];
+                    if (row.hasOwnProperty(o)) {
+                        rowEntity[o] = row[o];
+                    } else {
+                        rowEntity[o] = inferDefault(tables[i].scheme[o]);
+                    }
                 }
             }
         }
