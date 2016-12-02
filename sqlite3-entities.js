@@ -286,7 +286,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var remove = this.remove = function (condition, callback) {
-            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
@@ -318,7 +318,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var first = this.first = function (condition, callback) {
-            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
@@ -340,7 +340,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var last = this.last = function (condition, callback) {
-            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var list = [];
@@ -376,7 +376,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var count = this.count = function (condition, callback) {
-            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var index = 0;
@@ -393,7 +393,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var all = this.all = function (callback) {
-            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
