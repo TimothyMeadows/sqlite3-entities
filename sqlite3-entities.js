@@ -56,7 +56,7 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var createTable = function (tableModel) {
-        if (!tableModel["name"] || !tableModel["scheme"]) throw "Invalid table model!"
+        if (!tableModel["name"] || !tableModel["scheme"]) throw "Invalid table model!";
 
         var inferType = function (value) {
             if (typeof value == "boolean") return "INTEGER";
@@ -172,7 +172,7 @@ var sqlite3Context = function (connectionString, options) {
                     continue;
                 }
 
-                sqlite3Context[rows[i].name] = new sqlite3Entity(rows[i].name);
+                sqlite3Context[rows[i].name] = new tableEntity(rows[i].name);
             }
 
             sqlite3Context.emit("ready");
@@ -204,7 +204,21 @@ var sqlite3Context = function (connectionString, options) {
         });
     }
 
-    var sqlite3Entity = function (tableName) {
+    var createRowEntity = function (tableName, row) {
+        var rowEntity = null;
+        for (var i in tables) {
+            if (tableName == tables[i].name) {
+                rowEntity = {};
+                for (var o in tables[i].scheme) {
+                    if (row.hasOwnProperty(o)) rowEntity[o] = row[o];
+                }
+            }
+        }
+
+        return rowEntity;
+    }
+
+    var tableEntity = function (tableName) {
         var add = this.add = function (row, callback) {
             var columns = "";
             var values = "";
@@ -264,9 +278,10 @@ var sqlite3Context = function (connectionString, options) {
 
                 var conditioned = false;
                 for (var i in rows) {
-                    if (condition(rows[i])) {
+                    var entity = createRowEntity(tableName, rows[i]);
+                    if (condition(entity)) {
                         conditioned = true;
-                        if (callback) callback(rows[i]);
+                        if (callback) callback(entity);
                         break;
                     }
                 }
@@ -283,8 +298,9 @@ var sqlite3Context = function (connectionString, options) {
 
                 var list = [];
                 for (var i in rows) {
-                    if (condition(rows[i])) {
-                        list.push(rows[i]);
+                    var entity = createRowEntity(tableName, rows[i]);
+                    if (condition(entity)) {
+                        list.push(entity);
                     }
                 }
 
@@ -298,8 +314,9 @@ var sqlite3Context = function (connectionString, options) {
 
                 var list = [];
                 for (var i in rows) {
-                    if (condition(rows[i])) {
-                        list.push(rows[i]);
+                    var entity = createRowEntity(tableName, rows[i]);
+                    if (condition(entity)) {
+                        list.push(createRowEntity(tableName, entity));
                     }
                 }
 
@@ -324,13 +341,6 @@ var sqlite3Context = function (connectionString, options) {
 
         var all = this.all = function (callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
-                if (err) sqlite3Context.emit("error", err);
-                if (callback) callback(rows);
-            });
-        };
-
-        var only = this.only = function (columns, callback) {
-            database.prepare("SELECT " + columns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
