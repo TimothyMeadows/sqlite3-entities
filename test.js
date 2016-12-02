@@ -31,9 +31,9 @@ context.once("ready", function () {
             created: 1001
         }, function() {
             console.log("row added!");
-            context.test_table.where((t) => t.created == 1001 && t.active, function(row) {
+            context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(row) {
                 console.log(row);
-            })
+            });
         });
     });
 });

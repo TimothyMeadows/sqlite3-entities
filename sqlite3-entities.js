@@ -64,7 +64,7 @@ var sqlite3Context = function (connectionString, options) {
         return "BLOB";
     }
 
-    var inferDefault = function(value) {
+    var inferDefault = function (value) {
         if (typeof value == "boolean") return false;
         if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return 0;
         if (typeof value == "string") return "";
@@ -232,6 +232,34 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var tableEntity = function (tableName) {
+        var tableEntity = this;
+        var rowColumns = "*";
+
+        var select = this.select = function (columns) {
+            var columnList = "";
+            if (!columns) {
+                tableEntity.rowColumns = "*";
+                return;
+            } else {
+                if (typeof (columns) == "string") {
+                    rowColumns = columns;
+                    return tableEntity;
+                } else {
+                    for (var i in columns) {
+                        if (columnList != "") {
+                            columnList += ", ";
+                        }
+
+                        columnList += columns[i];
+                    }
+                }
+
+            }
+
+            if (columnList != "") tableEntity.rowsColumns = columnList;
+            return tableEntity;
+        }
+
         var add = this.add = function (row, callback) {
             var columns = "";
             var values = "";
@@ -253,10 +281,12 @@ var sqlite3Context = function (connectionString, options) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback();
             });
+
+            return tableEntity;
         }
 
         var remove = this.remove = function (condition, callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
@@ -283,10 +313,12 @@ var sqlite3Context = function (connectionString, options) {
                     if (callback) callback(false);
                 }
             });
+
+            return tableEntity;
         }
 
         var first = this.first = function (condition, callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var conditioned = false;
@@ -303,10 +335,12 @@ var sqlite3Context = function (connectionString, options) {
                     if (callback) callback(null);
                 }
             });
+
+            return tableEntity;
         }
 
         var last = this.last = function (condition, callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var list = [];
@@ -319,26 +353,30 @@ var sqlite3Context = function (connectionString, options) {
 
                 if (callback) callback(list[list.length]);
             });
+
+            return tableEntity;
         }
 
         var where = this.where = function (condition, callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var list = [];
                 for (var i in rows) {
                     var entity = createRowEntity(tableName, rows[i]);
                     if (condition(entity)) {
-                        list.push(createRowEntity(tableName, entity));
+                        list.push(entity);
                     }
                 }
 
                 if (callback) callback(list);
             });
+
+            return tableEntity;
         }
 
         var count = this.count = function (condition, callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var index = 0;
@@ -350,13 +388,17 @@ var sqlite3Context = function (connectionString, options) {
 
                 if (callback) callback(index);
             });
+
+            return tableEntity;
         }
 
         var all = this.all = function (callback) {
-            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + rowColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
+
+            return tableEntity;
         };
     }
 
