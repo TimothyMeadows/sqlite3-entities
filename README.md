@@ -178,7 +178,7 @@ Chained execution passed the first table mapping execution (I.E. the results ret
 
 ```javascript
 var databaseContext = require('./sqlite3-entities');
-var context = new databaseContext("test.db", { cached: true, autoMigration: false });
+var context = new databaseContext("test.db", { cached: true, autoMigration: true });
 
 context.table("test_table", {
     id: 0,
