@@ -170,3 +170,35 @@ context.on("error", function(err) {
     console.log(err);
 });
 ```
+
+#Execute Chains (psudeo Linq)
+All table mappings support async based execution chains. However, due to the async nature if you directly chain statements at the table mapping level they will not contain results from the previous execution. The exception to this being select() which lets you control which columns which are selected in future statements in the same chain.
+
+Chained execution passed the first table mapping execution (I.E. the results returned from async) are synchronis, they can be chained, and, do include results from the previous exection.
+
+```javascript
+var databaseContext = require('./sqlite3-entities');
+var context = new databaseContext("test.db", { cached: true, autoMigration: false });
+
+context.table("test_table", {
+    id: 0,
+    uid: "",
+    active: false,
+    created: 0
+}, {
+    uid: { unique: true }
+});
+
+context.once("ready", function () {
+    if (context.migrated) console.log("database was migrated!");
+    if (context.created) console.log("database was created!");
+
+    context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(rows) {
+       console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
+    });
+});
+
+context.on("error", function(err) {
+    console.log(err);
+});
+```
