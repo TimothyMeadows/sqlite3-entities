@@ -13,8 +13,8 @@
 I felt it was important that tables could be defined in it's simplest form in a standard object notation. While complex mapping / indexing might be needed at a more advanced level. It didn't have to be "in your face" at all times. Types are inferred by there value. However, those values are not actually treated as defaults. This may change in the future. Similar to other ORM / Entity style frameworks. I wanted advanced "mapping" to be handeled in it's own object allowing for table objects, and, matching map objects when needed.
 
 ```javascript
-  var databaseContext = require('sqlite3-entities');
-  var context = new databaseContext("test.db", true);
+  var databaseContext = require('./sqlite3-entities');
+  var context = new databaseContext("test.db", { cached: true, autoMigration: true });
   context.table("test_table", {
     id: 0,
     uid: ""
@@ -42,8 +42,8 @@ The primary key is automatically determined using the first property in the obje
 
 
 ```javascript
-  var databaseContext = require('sqlite3-entities');
-  var context = new databaseContext("test.db", true);
+  var databaseContext = require('./sqlite3-entities');
+  var context = new databaseContext("test.db", { cached: true, autoMigration: true });
   context.table("test_table", {
     id: 0,
     uid: ""
