@@ -86,7 +86,7 @@ context.on("ready", function () {
     if (context.created) console.log("database was created!");
 
     console.log("database is ready!");
-/    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
+    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
         if (deleted) console.log("row removed!");
         context.test_table.add({
             uid: "test123",
