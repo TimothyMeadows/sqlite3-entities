@@ -121,7 +121,7 @@ context.table("test_table", {
 
 context.table("test_table2", {
     id: 0,
-    //uid: "" // uncomment to test manual migration after first execution
+o    //uid: "" // uncomment to test manual migration after first execution
 });
 
 context.once("ready", function () {
@@ -131,7 +131,7 @@ context.once("ready", function () {
     console.log("database is ready!");
     console.log(context);
 
-    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
+i    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
         if (deleted) console.log("row removed!");
         context.test_table.add({
             uid: "test123",
@@ -141,8 +141,7 @@ context.once("ready", function () {
             console.log("row added!");
             context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(rows) {
                 console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
-            });
-        });
+            });        });
     });
 });
 
@@ -171,7 +170,7 @@ context.on("error", function(err) {
 });
 ```
 
-#Execute Chains (psudeo Linq)
+#Execution Chains (psudeo Linq)
 All table mappings support async based execution chains. However, due to the async nature if you directly chain statements at the table mapping level they will not contain results from the previous execution. The exception to this being select() which lets you control which columns which are selected in future statements in the same chain.
 
 Chained execution passed the first table mapping execution (I.E. the results returned from async) are synchronis, they can be chained, and, do include results from the previous exection.
