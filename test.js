@@ -46,7 +46,7 @@ context.once("migration", function(differences) {
     for (var i = 0; i <= differences.length - 1; i++) {
         switch (differences[i]) {
             case "test_table2":
-                migration.prepare("ALTER TABLE test_table2 ADD uid TEXT NOT NULL;");
+                migration.prepare("ALTER TABLE test_table2 ADD uid TEXT;");
                 migration.run(function() {
                     migration.accept();
                 })
