@@ -338,8 +338,30 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var migration = this.migration = function () {
+        var changed = false;
+
         var accept = this.accept = function () {
-            sqlite3Context.migrated = true;
+            if (changed) {
+                database.prepare("DELETE FROM 'entities_master'").run(function () {
+                    var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
+                    query.all(function (err, rows) {
+                        if (err) sqlite3Context.emit("error", err);
+                        for (var i in rows) {
+                            if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
+                                continue;
+                            }
+
+                            var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", rows[i].sql);
+                            database.prepare("INSERT INTO 'entities_master' (name, hash, salt) VALUES (?, ?, ?)", rows[i].name, hmac.Data.toString(), hmac.Salt).run();
+                        }
+
+                        sqlite3Context.migrated = true;
+                        createMappings();
+                    });
+                });
+                return;
+            }
+
             createMappings();
         }
 
@@ -348,6 +370,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var run = this.run = function (callback) {
+            changed = true;
             ensure(seeder, 0, function () {
                 seeder = [];
                 if (callback) callback();
