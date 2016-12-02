@@ -128,18 +128,22 @@ var sqlite3Context = function (connectionString, options) {
 
                 if (mapping && mapping["unique"]) {
                     if (constraints == "") {
-                        constraints += " CONSTRAINT " + property + "_unique UNIQUE (" + property + ")";
+                        constraints += " ";
                     } else {
-                        constraints += ", CONSTRAINT " + property + "_unique UNIQUE (" + property + ")";
+                        constraints += ", ";
                     }
+
+                    constraints += "CONSTRAINT " + property + "_unique UNIQUE (" + property + ")";
                 }
 
                 if (mapping && mapping["foreign"]) {
                     if (constraints == "") {
-                        constraints += " FOREIGN KEY(" + property + ") REFERENCES " + mapping.foreign.table + "(" + mapping.foreign.column + ")";
+                        constraints += " ";
                     } else {
-                        constraints += ", FOREIGN KEY(" + property + ") REFERENCES " + mapping.foreign.table + "(" + mapping.foreign.column + ")";
+                        constraints += ", ";
                     }
+
+                    constraints += "FOREIGN KEY(" + property + ") REFERENCES " + mapping.foreign.table + "(" + mapping.foreign.column + ")";
                 }
                 continue;
             }
@@ -333,24 +337,24 @@ var sqlite3Context = function (connectionString, options) {
         };
     }
 
-    var migration = this.migration = function() {
-        var accept = this.accept = function() {
+    var migration = this.migration = function () {
+        var accept = this.accept = function () {
             sqlite3Context.migrated = true;
             createMappings();
         }
 
-        var prepare = this.prepare = function(sql) {
-             seeder.push(database.prepare(sql));
+        var prepare = this.prepare = function (sql) {
+            seeder.push(database.prepare(sql));
         }
 
-        var run = this.run = function(callback) {
+        var run = this.run = function (callback) {
             ensure(seeder, 0, function () {
                 seeder = [];
                 if (callback) callback();
             });
         }
 
-        var reject = this.reject = function(reason) {
+        var reject = this.reject = function (reason) {
             if (reason) throw "Migration rejected: " + reason;
             throw "Migration rejected."
         }
@@ -412,7 +416,7 @@ var sqlite3Context = function (connectionString, options) {
             });
         };
 
-        var executeAutoMigration = function() {
+        var executeAutoMigration = function () {
             if (!options || !options.autoMigration) return;
             sqlite3Context.migrated = true;
 
