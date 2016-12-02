@@ -214,21 +214,116 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var createRowEntity = function (tableName, row) {
-        var rowEntity = null;
+        var entity = null;
         for (var i in tables) {
             if (tableName == tables[i].name) {
-                rowEntity = {};
+                entity = {};
                 for (var o in tables[i].scheme) {
                     if (row.hasOwnProperty(o)) {
-                        rowEntity[o] = row[o];
+                        entity[o] = row[o];
                     } else {
-                        rowEntity[o] = inferDefault(tables[i].scheme[o]);
+                        entity[o] = inferDefault(tables[i].scheme[o]);
                     }
                 }
             }
         }
 
-        return rowEntity;
+        return entity;
+    }
+
+    var rowsEntity = function (tableName, rows) {
+        var toString = this.toString = function() {
+            return JSON.stringify({ table: tableName, rows: rows });
+        }
+
+        var toList = this.toList = function () {
+            if (!tableName || !rows) return null;
+            return rows;
+        }
+
+        var first = this.first = function (condition) {
+            if (!tableName || !rows) return null;
+
+            var value = null;
+            if (condition) {
+                for (var i in rows) {
+                    if (condition(rows[i])) {
+                        value = createRowEntity(tableName, rows[i]);
+                        break;
+                    }
+                }
+            } else {
+                if (rows.length > 0) {
+                    value = createRowEntity(tableName, rows[0]);
+                }
+            }
+
+            return value;
+        }
+
+        var last = this.last = function (condition) {
+            if (!tableName || !rows) return null;
+
+            if (rows.length == 0) {
+                return null;
+            }
+
+            var value = null;
+            if (condition) {
+                for (var i in rows) {
+                    if (condition(rows[i])) {
+                        value = createRowEntity(tableName, rows[i]);
+                        break;
+                    }
+                }
+            } else {
+                if (rows.length > 0) {
+                    value = createRowEntity(tableName, rows[rows.length - 1]);
+                }
+            }
+
+            return value;
+        }
+
+        var where = this.where = function (condition) {
+            if (!tableName || !rows) return null;
+
+            if (rows.length == 0) {
+                return null;
+            }
+
+            var list = [];
+            for (var i in rows) {
+                if (condition(rows[i])) {
+                    list.push(createRowEntity(tableName, rows[i]));
+                    break;
+                }
+            }
+
+            return createRowsEntity(tableName, list);
+        }
+
+        var count = this.count = function(condition) {
+            if (!tableName || !rows) return null;
+
+            if (rows.length == 0) {
+                return null;
+            }
+
+            var value = 0;
+            if (condition) {
+                for (var i in rows) {
+                    if (condition(rows[i])) {
+                        value++;
+                        break;
+                    }
+                }
+            } else {
+                value = rows.length;
+            }
+
+            return value;
+        }
     }
 
     var tableEntity = function (tableName) {
@@ -360,16 +455,12 @@ var sqlite3Context = function (connectionString, options) {
         var where = this.where = function (condition, callback) {
             database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
-
                 var list = [];
                 for (var i in rows) {
-                    var entity = createRowEntity(tableName, rows[i]);
-                    if (condition(entity)) {
-                        list.push(entity);
-                    }
+                    list.push(createRowEntity(tableName, rows[i]));
                 }
 
-                if (callback) callback(list);
+                if (callback) callback(new rowsEntity(tableName, list));
             });
 
             return tableEntity;
