@@ -1,7 +1,5 @@
 var databaseContext = require('./sqlite3-entities');
-var context = new databaseContext("test.db", true);
-context.autoMigration = context.autoMigrationPlan.DropCreateOnChange;
-context.useAutoMigration = true;
+var context = new databaseContext("test.db", { cached: true });
 
 context.table("test_table", {
     id: 0,
@@ -14,10 +12,11 @@ context.table("test_table", {
 });
 
 context.table("test_table2", {
-    id: 0
+    id: 0,
+    uid: ""
 });
 
-context.on("ready", function () {
+context.once("ready", function () {
     if (context.migrated) console.log("database was migrated!");
     if (context.created) console.log("database was created!");
 
@@ -37,6 +36,26 @@ context.on("ready", function () {
             })
         });
     });
+});
+
+context.once("migration", function(differences) {
+    console.log("Table differences");
+    console.log(differences);
+
+    var migration = new context.migration();
+    for (var i = 0; i <= differences.length - 1; i++) {
+        switch (differences[i]) {
+            case "test_table2":
+                migration.prepare("ALTER TABLE test_table2 ADD uid TEXT NOT NULL;");
+                migration.run(function() {
+                    migration.accept();
+                })
+                break;
+            default:
+                migration.reject();
+                break;
+        }
+    }
 });
 
 context.on("error", function(err) {

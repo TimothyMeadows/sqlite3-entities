@@ -3,20 +3,13 @@ var sqlite3 = require('sqlite3').verbose(),
     util = require('util'),
     Blackfeather = require('Blackfeather');
 
-var sqlite3Context = function (connectionString, cached) {
+var sqlite3Context = function (connectionString, options) {
+    if (!options) options = {};
     var sqlite3Context = this;
-    var database = this.database = cached == true ? new sqlite3.cached.Database(connectionString) : new sqlite3.Database(connectionString);
+    var database = this.database = options && options.cached == true ? new sqlite3.cached.Database(connectionString) : new sqlite3.Database(connectionString);
     var seeder = [];
     var tables = [];
 
-    var autoMigrationPlan = this.autoMigrationPlan = {
-        HaltOnChange: 0,
-        DropCreateOnChange: 1,
-        AlterOnChange: 2
-    };
-
-    var autoMigration = this.autoMigration = autoMigrationPlan.HaltOnChange;
-    var useAutoMigration = true;
     var created = this.created = false;
     var migrated = this.migrated = false;
 
@@ -30,8 +23,7 @@ var sqlite3Context = function (connectionString, cached) {
         }
 
         ensure(seeder, 0, function () {
-            delete sqlite3Context.seeder;
-
+            seeder = [];
             var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
             query.all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
@@ -341,9 +333,33 @@ var sqlite3Context = function (connectionString, cached) {
         };
     }
 
+    var migration = this.migration = function() {
+        var accept = this.accept = function() {
+            sqlite3Context.migrated = true;
+            createMappings();
+        }
+
+        var prepare = this.prepare = function(sql) {
+             seeder.push(database.prepare(sql));
+        }
+
+        var run = this.run = function(callback) {
+            ensure(seeder, 0, function () {
+                seeder = [];
+                if (callback) callback();
+            });
+        }
+
+        var reject = this.reject = function(reason) {
+            if (reason) throw "Migration rejected: " + reason;
+            throw "Migration rejected."
+        }
+    }
+
     var migrate = function () {
         var physicalMigrationValid = false;
         var objectMigrationValid = false;
+        var migrationNeeded = [];
 
         var comparePhysicalMigration = function (callback) {
             var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
@@ -351,7 +367,6 @@ var sqlite3Context = function (connectionString, cached) {
                 if (err) sqlite3Context.emit("error", err);
 
                 var validated = 0;
-                var migrationNeeded = false;
                 for (var i in rows) {
                     var tableRow = rows[i];
                     if (tableRow.name == "sqlite_sequence" || tableRow.name == "entities_master") {
@@ -360,8 +375,8 @@ var sqlite3Context = function (connectionString, cached) {
 
                     compareMaster(tableRow.name, tableRow.sql, function (valid) {
                         validated++;
-                        if (!valid) migrationNeeded = true;
-                        if (validated + 2 == rows.length) if (callback) callback(!migrationNeeded);
+                        if (!valid) migrationNeeded.push(tableRow.name);
+                        if (validated + 2 == rows.length) if (callback) callback(migrationNeeded);
                     });
                 }
             });
@@ -369,7 +384,6 @@ var sqlite3Context = function (connectionString, cached) {
 
         var compareModelMigration = function (callback) {
             var validated = 0;
-            var migrationNeeded = false;
 
             for (var i = 0; i <= tables.length - 1; i++) {
                 var tableObject = tables[i];
@@ -378,8 +392,8 @@ var sqlite3Context = function (connectionString, cached) {
 
                 compareMaster(tableObject.name, sql, function (valid) {
                     validated++;
-                    if (!valid) migrationNeeded = true;
-                    if (validated == tables.length) if (callback) callback(!migrationNeeded);
+                    if (!valid) migrationNeeded.push(tableObject.name);
+                    if (validated == tables.length) if (callback) callback(migrationNeeded);
                 });
             }
         }
@@ -399,20 +413,23 @@ var sqlite3Context = function (connectionString, cached) {
         };
 
         var executeAutoMigration = function() {
+            if (!options || !options.autoMigration) return;
             sqlite3Context.migrated = true;
-            switch (autoMigration) {
-                case migrationPlan.HaltOnChange:
+
+            switch (options.autoMigration) {
+                default:
+                case 0:
                     throw "A table, or, model has been changed, and, no longer valid.";
-                case migrationPlan.CreateOnChange:
+                case 1:
                     seed();
                     break;
-                case migrationPlan.AlterOnChange:
+                case 3:
                     throw "This migration action has not been created yet!";
             }
         };
 
-        comparePhysicalMigration(function (valid) {
-            if (valid) {
+        comparePhysicalMigration(function (differences) {
+            if (differences.length == 0) {
                 physicalMigrationValid = true;
 
                 if (physicalMigrationValid && objectMigrationValid) {
@@ -421,12 +438,12 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            if (useAutoMigration) return executeAutoMigration();
-            sqlite3Context.emit("migration");
+            if (options && options.autoMigration) return executeAutoMigration();
+            sqlite3Context.emit("migration", differences);
         });
 
-        compareModelMigration(function (valid) {
-            if (valid) {
+        compareModelMigration(function (differences) {
+            if (differences.length == 0) {
                 objectMigrationValid = true;
 
                 if (physicalMigrationValid && objectMigrationValid) {
@@ -435,8 +452,8 @@ var sqlite3Context = function (connectionString, cached) {
                 return;
             }
 
-            if (useAutoMigration) return executeAutoMigration();
-            sqlite3Context.emit("migration");
+            if (options && options.autoMigration) return executeAutoMigration();
+            sqlite3Context.emit("migration", differences);
         })
     }
 
