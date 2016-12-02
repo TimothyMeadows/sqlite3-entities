@@ -1,6 +1,6 @@
 {
   "name": "sqlite3-entities",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "author": "Timothy D Meadows II <timothy@timothymeadows.com>",
   "description": "SQLite 3 Async Entities in JavaScript / Node.js",
