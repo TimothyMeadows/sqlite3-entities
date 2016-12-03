@@ -121,7 +121,7 @@ context.table("test_table", {
 
 context.table("test_table2", {
     id: 0,
-o    //uid: "" // uncomment to test manual migration after first execution
+    //uid: "" // uncomment to test manual migration after first execution
 });
 
 context.once("ready", function () {
@@ -131,7 +131,7 @@ context.once("ready", function () {
     console.log("database is ready!");
     console.log(context);
 
-i    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
+    context.test_table.remove((t) => t.uid == "test123", function (deleted) {
         if (deleted) console.log("row removed!");
         context.test_table.add({
             uid: "test123",
