@@ -4,6 +4,8 @@ var context = new databaseContext("test.db", { cached: true, autoMigration: fals
 context.table("test_table", {
     id: 0,
     uid: "",
+    array: [],
+    object: {},
     active: false,
     created: 0
 }, {
@@ -28,10 +30,12 @@ context.once("ready", function () {
         context.test_table.add({
             uid: "test123",
             active: true,
+            array: ["test1", 1, "test2", true],
+            object: { bird:"raven", loves:"sloths" },
             created: 1001
         }, function() {
             console.log("row added!");
-            context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(rows) {
+            context.test_table.select(["id", "uid", "array", "object", "active"]).where((t) => t.active, function(rows) {
                 console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
             });
         });

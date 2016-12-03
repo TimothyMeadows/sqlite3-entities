@@ -59,8 +59,8 @@ var sqlite3Context = function (connectionString, options) {
         if (typeof value == "boolean") return "INTEGER";
         if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return "INTEGER";
         if (typeof value == "string") return "TEXT";
+        if (Array.isArray(value)) return "TEXT";
         if (typeof value == "object") return "TEXT";
-        if (typeof value == "array") return "TEXT";
         return "BLOB";
     }
 
@@ -68,9 +68,90 @@ var sqlite3Context = function (connectionString, options) {
         if (typeof value == "boolean") return false;
         if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return 0;
         if (typeof value == "string") return "";
+        if (Array.isArray(value)) return [];
         if (typeof value == "object") return {};
-        if (typeof value == "array") return [];
         return null;
+    }
+
+    var inferFromConvertable = function (tableName, column, value) {
+        try {
+            for (var i in tables) {
+                if (tableName == tables[i].name) {
+                    for (var o in tables[i].scheme) {
+                        if (o == column) {
+                            var type = tables[i].scheme[o];
+                            if (typeof type == "boolean") {
+                                if (typeof value == 'boolean') return value;
+                                if (typeof value == 'number') {
+                                    if (value == 0) return false;
+                                    if (value == 1) return true;
+                                }
+
+                                if (typeof value != 'string') throw "Can't convert value for '" + column + "' to boolean.";
+                                if (value == "0" || value == "false") return false;
+                                if (value == "1" || value == "true") return true;
+                            }
+
+                            if (/^-?[\d.]+(?:e-?\d+)?$/.test(type)) {
+                                if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) {
+                                    return Number(value);
+                                } else {
+                                    throw "Can't convert value for '" + column + "' to number.";
+                                }
+                            }
+
+                            if (typeof type == "string") return value.toString();
+                            if (Array.isArray(type)) {
+                                if (typeof value == "string") return JSON.parse(value);
+                                return value;
+                            }
+
+                            if (typeof type == "object") {
+                                if (typeof value == "string") return JSON.parse(value);
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.log(column);
+            throw err;
+        }
+
+        throw "Unable to convert an unknown type.";
+    }
+
+    var inferToConvertable = function (tableName, column, value) {
+        for (var i in tables) {
+            if (tableName == tables[i].name) {
+                for (var o in tables[i].scheme) {
+                    if (o == column) {
+                        var type = tables[i].scheme[o];
+                        if (typeof type == "boolean") {
+                            if (typeof value == 'boolean') return value;
+                            if (typeof value != 'string') throw "Can't convert value for '" + column + "' to boolean."
+                            if (value == "0" || value == "false") return false;
+                            if (value == "1" || value == "true") return true;
+                        }
+
+                        if (/^-?[\d.]+(?:e-?\d+)?$/.test(type)) {
+                            if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) {
+                                return Number(value)
+                            } else {
+                                throw "Can't convert value for '" + column + "' to number."
+                            }
+                        }
+
+                        if (typeof type == "string") return value.toString();
+                        if (Array.isArray(type)) return JSON.stringify(value);
+                        if (typeof type == "object") return JSON.stringify(value);
+                    }
+                }
+            }
+        }
+
+        throw "Unable to convert an unknown type.";
     }
 
     var createTable = function (tableModel) {
@@ -220,7 +301,7 @@ var sqlite3Context = function (connectionString, options) {
                 entity = {};
                 for (var o in tables[i].scheme) {
                     if (row.hasOwnProperty(o)) {
-                        entity[o] = row[o];
+                        entity[o] = inferFromConvertable(tableName, o, row[o]);
                     } else {
                         entity[o] = inferDefault(tables[i].scheme[o]);
                     }
@@ -232,7 +313,7 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var rowsEntity = function (tableName, rows) {
-        var toString = this.toString = function() {
+        var toString = this.toString = function () {
             return JSON.stringify({ table: tableName, rows: rows });
         }
 
@@ -303,7 +384,7 @@ var sqlite3Context = function (connectionString, options) {
             return createRowsEntity(tableName, list);
         }
 
-        var count = this.count = function(condition) {
+        var count = this.count = function (condition) {
             if (!tableName || !rows) return null;
 
             if (rows.length == 0) {
@@ -369,7 +450,9 @@ var sqlite3Context = function (connectionString, options) {
                     values += ", ?";
                 }
 
-                value.push(row[column]);
+                var inferred = inferToConvertable(tableName, column, row[column]);
+                //console.log(inferred);
+                value.push(inferred);
             }
 
             database.prepare("INSERT INTO '" + tableName + "' (" + columns + ") VALUES (" + values + ")").run(value, function (err) {
