@@ -182,18 +182,18 @@ var context = new databaseContext("test.db", { cached: true, autoMigration: true
 context.table("test_table", {
     id: 0,
     uid: "",
+    array: [],
+    object: {},
     active: false,
     created: 0
-}, {
-    uid: { unique: true }
 });
 
 context.once("ready", function () {
     if (context.migrated) console.log("database was migrated!");
     if (context.created) console.log("database was created!");
 
-    context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(rows) {
-       console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
+    context.test_table.select(["id", "uid", "array", "object", "active"]).where((t) => t.active, function(rows) {
+        console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
     });
 });
 
