@@ -74,49 +74,44 @@ var sqlite3Context = function (connectionString, options) {
     }
 
     var inferFromConvertable = function (tableName, column, value) {
-        try {
-            for (var i in tables) {
-                if (tableName == tables[i].name) {
-                    for (var o in tables[i].scheme) {
-                        if (o == column) {
-                            var type = tables[i].scheme[o];
-                            if (typeof type == "boolean") {
-                                if (typeof value == 'boolean') return value;
-                                if (typeof value == 'number') {
-                                    if (value == 0) return false;
-                                    if (value == 1) return true;
-                                }
-
-                                if (typeof value != 'string') throw "Can't convert value for '" + column + "' to boolean.";
-                                if (value == "0" || value == "false") return false;
-                                if (value == "1" || value == "true") return true;
+        for (var i in tables) {
+            if (tableName == tables[i].name) {
+                for (var o in tables[i].scheme) {
+                    if (o == column) {
+                        var type = tables[i].scheme[o];
+                        if (typeof type == "boolean") {
+                            if (typeof value == 'boolean') return value;
+                            if (typeof value == 'number') {
+                                if (value == 0) return false;
+                                if (value == 1) return true;
                             }
 
-                            if (/^-?[\d.]+(?:e-?\d+)?$/.test(type)) {
-                                if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) {
-                                    return Number(value);
-                                } else {
-                                    throw "Can't convert value for '" + column + "' to number.";
-                                }
-                            }
+                            if (typeof value != 'string') throw "Can't convert value for '" + column + "' to boolean.";
+                            if (value == "0" || value == "false") return false;
+                            if (value == "1" || value == "true") return true;
+                        }
 
-                            if (typeof type == "string") return value.toString();
-                            if (Array.isArray(type)) {
-                                if (typeof value == "string") return JSON.parse(value);
-                                return value;
+                        if (/^-?[\d.]+(?:e-?\d+)?$/.test(type)) {
+                            if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) {
+                                return Number(value);
+                            } else {
+                                throw "Can't convert value for '" + column + "' to number.";
                             }
+                        }
 
-                            if (typeof type == "object") {
-                                if (typeof value == "string") return JSON.parse(value);
-                                return value;
-                            }
+                        if (typeof type == "string") return value.toString();
+                        if (Array.isArray(type)) {
+                            if (typeof value == "string") return JSON.parse(value);
+                            return value;
+                        }
+
+                        if (typeof type == "object") {
+                            if (typeof value == "string") return JSON.parse(value);
+                            return value;
                         }
                     }
                 }
             }
-        } catch (err) {
-            console.log(column);
-            throw err;
         }
 
         throw "Unable to convert an unknown type.";
