@@ -11,7 +11,7 @@
   git clone https://github.com/TimothyMeadows/sqlite3-entities
 ```
 #Dependancies
-node-sqlite3
+[node-sqlite3](https://github.com/mapbox/node-sqlite3)
 
 [![Build Status](https://travis-ci.org/mapbox/node-sqlite3.svg?branch=master)](https://travis-ci.org/mapbox/node-sqlite3)
 [![Dependencies](https://david-dm.org/mapbox/node-sqlite3.svg)](https://david-dm.org/mapbox/node-sqlite3)
