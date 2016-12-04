@@ -2,7 +2,6 @@
 [![NPM](https://nodei.co/npm/sqlite3-entities.png?downloads=true&downloadRank=true)](https://nodei.co/npm/sqlite3-entities/)
 #Installing
 ##Node.js
-###https://www.npmjs.com/package/sqlite3-entities
 ```bash
   npm install sqlite3-entities --save
 ```
