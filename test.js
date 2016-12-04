@@ -1,5 +1,5 @@
-var databaseContext = require('./sqlite3-entities');
-var context = new databaseContext("test.db", { cached: true, autoMigration: 3 });
+var entities = require('./sqlite3-entities');
+var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
 
 context.table("test_table", {
     id: 0,
@@ -42,11 +42,11 @@ context.once("ready", function () {
     });
 });
 
-context.once("migration", function(differences) {
-    console.log("Table differences");
+context.once("migration", function(migration, differences) {
+    console.log("manual migration needed!");
+    console.log(migration);
     console.log(differences);
 
-    var migration = new context.migration();
     for (var i = 0; i <= differences.length - 1; i++) {
         switch (differences[i].name) {
             case "test_table2":

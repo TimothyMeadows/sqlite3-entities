@@ -2,6 +2,13 @@ var sqlite3 = require('sqlite3').verbose(),
     events = require('events'),
     util = require('util')
 
+var sqlite3MigrationPlan = {
+    manual: 0,
+    halt: 1,
+    dropCreate: 2,
+    alter: 3
+};
+
 var sqlite3Context = function (connectionString, options) {
     if (!options) options = {};
     var sqlite3Context = this;
@@ -185,6 +192,17 @@ var sqlite3Context = function (connectionString, options) {
         throw "Unable to convert an unknown type.";
     }
 
+    var objectCount = function (object) {
+        var count = 0;
+        for (var i in object) {
+            if (object.hasOwnProperty(i)) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     var alterTableFromObject = function (tableName, callback) {
         database.prepare("SELECT name, sql, object FROM entities_master WHERE name=?", tableName).all(function (err, row) {
             if (err) sqlite3Context.emit("error", err);
@@ -201,6 +219,10 @@ var sqlite3Context = function (connectionString, options) {
 
                 if (tableObject == null) throw "Unable to find scheme for '" + tableName + "'.";
                 var originalTableObject = JSON.parse(row[0].object);
+                if (objectCount(tableObject) == objectCount(originalTableObject)) {
+                    throw "Column rename not currently supported!";
+                }
+
                 for (var i in tableObject.scheme) {
                     var found = false;
                     for (var x in originalTableObject) {
@@ -209,9 +231,18 @@ var sqlite3Context = function (connectionString, options) {
                         }
                     }
 
-                    if (!found) {
-                        alters.push(database.prepare("ALTER TABLE '" + tableName + "' ADD COLUMN " + createTableProperty(i, tableObject.scheme, tableObject.mapping)));
+                    if (!found) alters.push(database.prepare("ALTER TABLE '" + tableName + "' ADD COLUMN " + createTableProperty(i, tableObject.scheme, tableObject.mapping)));
+                }
+
+                for (var i in originalTableObject) {
+                    var found = false;
+                    for (var x in tableObject.scheme) {
+                        if (i == x) {
+                            found = true;
+                        }
                     }
+
+                    if (!found) throw "Column removal not currently supported!";
                 }
 
                 ensure(alters, 0, function () {
@@ -642,7 +673,7 @@ var sqlite3Context = function (connectionString, options) {
         };
     }
 
-    var migration = this.migration = function () {
+    var migration = function () {
         var changed = false;
 
         var accept = this.accept = function () {
@@ -726,19 +757,23 @@ var sqlite3Context = function (connectionString, options) {
             }
         }
 
-        var executeAutoMigration = function (differences) {
-            if (!options || !options.autoMigration) return;
+        var executeMigration = function (differences) {
+            if (!options || !options.migration) return;
             sqlite3Context.migrated = true;
 
-            switch (options.autoMigration) {
+            switch (options.migration) {
                 default:
-                case 0:
-                    throw "A table, or, model has been changed, and, no longer valid.";
-                case 1:
+                case sqlite3MigrationPlan.manual:
+                    sqlite3Context.emit("migration", new migration(), differences);
+                    break;
+                case sqlite3MigrationPlan.halt:
+                    throw "A table, or, model has been changed, and, no longer valid\n\n" + JSON.stringify(differences);
+                case sqlite3MigrationPlan.dropCreate:
                     seed();
                     break;
-                case 3:
+                case sqlite3MigrationPlan.alter:
                     var altered = 0;
+                    var manualMigration = [];
                     for (var i in differences) {
                         if (differences[i].type == "object") {
                             alterTableFromObject(differences[i].name, function () {
@@ -752,9 +787,12 @@ var sqlite3Context = function (connectionString, options) {
                                 }
                             });
                         } else {
-                            throw "A table has been altered outside of it's model. This can not be changed.";
+                            manualMigration.push(differences[i]);
                         }
                     }
+
+                    if (manualMigration.length > 0) sqlite3Context.emit("migration", new migration(), manualMigration);
+                    break;
             }
         };
 
@@ -769,8 +807,7 @@ var sqlite3Context = function (connectionString, options) {
                 return;
             }
 
-            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.autoMigration)) return executeAutoMigration(differences);
-            if ((physicalMigrationChecked && objectMigrationChecked)) sqlite3Context.emit("migration", differences);
+            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.migration)) executeMigration(differences);
         });
 
         compareModelMigration(function (differences) {
@@ -784,8 +821,7 @@ var sqlite3Context = function (connectionString, options) {
                 return;
             }
 
-            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.autoMigration)) return executeAutoMigration(differences);
-            if ((physicalMigrationChecked && objectMigrationChecked)) sqlite3Context.emit("migration", differences);
+            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.migration)) executeMigration(differences);
         })
     }
 
@@ -804,4 +840,4 @@ var sqlite3Context = function (connectionString, options) {
 };
 
 util.inherits(sqlite3Context, events);
-module['exports'] = sqlite3Context;
+module['exports'] = { database: sqlite3Context, migration: sqlite3MigrationPlan };
