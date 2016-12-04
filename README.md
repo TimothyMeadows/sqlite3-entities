@@ -108,7 +108,10 @@ In the unfortunite event an exception occurs. You can use the error event to lis
 #Migration
 
 Automatic migration support exists for halt, drop & create, and, alter. Note that if you use alter, and a physical migration is detected it will trigger the migration event.
-You can also choose to use "manual" migration by specifying migration.manual or not specifying the migration option at all.
+You can also choose to use "manual" migration by specifying migration.manual or not specifying the migration option at all. Because SQLite3 does not support dropping, or, 
+renaming of columns after they are created. Support for these methods also do not exist in sqlite3-entities.
+
+Warning: THERE IS NO DATA MIGRATION SUPPORT FOR DROP & CREATE. ALL DATA WILL BE LOST.
 
 ```javascript
   var entities = require('sqlite3-entities');
