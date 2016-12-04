@@ -5,6 +5,21 @@
 ```bash
   npm install sqlite3-entities --save
 ```
+##Browser
+```bash
+npm install -g browserify
+git clone https://github.com/TimothyMeadows/sqlite3-entities
+cd sqlite3-entities
+browserify sqlite3-entities.js -o sqlite3-entities.min.js
+```
+```html
+<script src="sqlite3-entities.min.js"></script>
+```
+Note: Due to the browsers lack of traditional filesystem, you need to use memory for your database source in the browser.
+```javascript
+  var entities = require('sqlite3-entities');
+  var context = new entities.database(":memory:");
+```
 ##Source
 ```bash
   git clone https://github.com/TimothyMeadows/sqlite3-entities
