@@ -14,7 +14,7 @@ I felt it was important that tables could be defined in it's simplest form in a 
 
 ```javascript
   var entities = require('sqlite3-entities');
-  var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
+  var context = new entities.database("test.db");
   context.table("test_table", {
     id: 0,
     uid: ""
@@ -27,7 +27,7 @@ Numbers, and, Boolean are treated as INTEGER. String, and, object are treated as
 
 ```javascript
   var entities = require('sqlite3-entities');
-  var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
+  var context = new entities.database("test.db", { cached: true });
   context.table("test_table", {
     id: 0,
     uid: ""
@@ -43,7 +43,7 @@ The primary key is automatically determined using the first property in the obje
 
 ```javascript
   var entities = require('sqlite3-entities');
-  var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
+  var context = new entities.database("test.db", { cached: true });
   context.table("test_table", {
     id: 0,
     uid: ""
@@ -59,7 +59,7 @@ Finally, Foreign keys, and, unqiue constraints can be declared using the mapping
 
 ```javascript
   var entities = require('sqlite3-entities');
-  var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
+  var context = new entities.database("test.db", { cached: true });
   context.table("test_table", {
     id: 0,
     uid: "",
@@ -99,6 +99,10 @@ In the unfortunite event an exception occurs. You can use the error event to lis
             })
         });
     });
+  });
+
+  context.on("error", function(err) {
+    console.log(err);
   });
 ```
 #Migration
@@ -140,14 +144,14 @@ You can also choose to use "manual" migration by specifying migration.manual or 
             created: 1001
         }, function() {
             console.log("row added!");
-            context.test_table.select(["id", "uid", "active"]).where((t) => t.active, function(rows) {
-                console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
-            });        });
+            context.test_table.where((t) => t.created == 1001 && t.active, function(row) {
+                console.log(row.toList());
+            })
+        });
     });
   });
 
   context.once("migration", function(differences) {
-    console.log("Table differences");
     console.log(differences);
 
     var migration = new context.migration();
@@ -194,7 +198,7 @@ Chained execution passed the first table mapping execution (I.E. the results ret
     if (context.created) console.log("database was created!");
 
     context.test_table.select(["id", "uid", "array", "object", "active"]).where((t) => t.active, function(rows) {
-        console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
+        console.log(rows.where((t) => t.created == 0).first((t) => t.uid == "test123"));
     });
   });
 

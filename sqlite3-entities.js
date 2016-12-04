@@ -479,7 +479,7 @@ var sqlite3Context = function (connectionString, options) {
                 }
             }
 
-            return createRowsEntity(tableName, list);
+            return new rowsEntity(tableName, list);
         }
 
         var count = this.count = function (condition) {

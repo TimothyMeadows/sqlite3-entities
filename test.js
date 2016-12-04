@@ -36,7 +36,7 @@ context.once("ready", function () {
         }, function() {
             console.log("row added!");
             context.test_table.select(["id", "uid", "array", "object", "active"]).where((t) => t.active, function(rows) {
-                console.log(rows.first((t) => t.uid == "test123" && t.created == 0));
+                console.log(rows.where((t) => t.created == 0).first((t) => t.uid == "test123"));
             });
         });
     });
