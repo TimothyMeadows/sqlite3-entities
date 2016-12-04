@@ -48,7 +48,7 @@ context.once("migration", function(differences) {
 
     var migration = new context.migration();
     for (var i = 0; i <= differences.length - 1; i++) {
-        switch (differences[i]) {
+        switch (differences[i].name) {
             case "test_table2":
                 migration.prepare("ALTER TABLE test_table2 ADD uid TEXT;");
                 migration.run(function() {

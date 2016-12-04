@@ -1,7 +1,6 @@
 var sqlite3 = require('sqlite3').verbose(),
     events = require('events'),
-    util = require('util'),
-    Blackfeather = require('Blackfeather');
+    util = require('util')
 
 var sqlite3Context = function (connectionString, options) {
     if (!options) options = {};
@@ -15,7 +14,7 @@ var sqlite3Context = function (connectionString, options) {
 
     var seed = function () {
         seeder.push(database.prepare("DROP TABLE IF EXISTS 'entities_master'"));
-        seeder.push(database.prepare("CREATE TABLE IF NOT EXISTS 'entities_master' (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, hash TEXT NOT NULL, salt TEXT NOT NULL)"));
+        seeder.push(database.prepare("CREATE TABLE IF NOT EXISTS 'entities_master' (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, sql TEXT NOT NULL, object TEXT)"));
         for (var t in tables) {
             var tableObject = tables[t];
             seeder.push(database.prepare("DROP TABLE IF EXISTS '" + tableObject.name + "'"));
@@ -24,22 +23,59 @@ var sqlite3Context = function (connectionString, options) {
 
         ensure(seeder, 0, function () {
             seeder = [];
-            var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
-            query.all(function (err, rows) {
-                if (err) sqlite3Context.emit("error", err);
-                for (var i in rows) {
-                    if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
-                        continue;
-                    }
-
-                    var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", rows[i].sql);
-                    database.prepare("INSERT INTO 'entities_master' (name, hash, salt) VALUES (?, ?, ?)", rows[i].name, hmac.Data.toString(), hmac.Salt).run();
-                }
-
+            master.update(function () {
                 sqlite3Context.created = true;
                 createMappings();
             });
         });
+    };
+
+    var master = {
+        update: function (callback) {
+            var chain = [];
+            database.prepare("DELETE FROM 'entities_master'").run(function () {
+                var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
+                query.all(function (err, rows) {
+                    if (err) sqlite3Context.emit("error", err);
+                    for (var i in rows) {
+                        if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
+                            continue;
+                        }
+
+                        var tableObject = null;
+                        for (var n in tables) {
+                            if (tables[n].name == rows[i].name) {
+                                tableObject = tables[n].scheme;
+                            }
+                        }
+
+                        if (tableObject != null) {
+                            tableObject = JSON.stringify(tableObject);
+                        }
+
+                        chain.push(database.prepare("INSERT INTO 'entities_master' (name, sql, object) VALUES (?, ?, ?)", rows[i].name, rows[i].sql, tableObject));
+                    }
+
+                    ensure(chain, 0, function () {
+                        if (callback) callback();
+                    });
+                });
+            });
+        },
+        compare: function (name, sql, callback) {
+            database.prepare("SELECT name, sql, object FROM entities_master WHERE name=?", name).all(function (err, row) {
+                if (err) sqlite3Context.emit("error", err);
+
+                if (row[0].name == name) {
+                    if (row[0].sql == sql) {
+                        if (callback) callback(true);
+                        return;
+                    }
+                }
+
+                if (callback) callback(false);
+            });
+        }
     };
 
     var table = this.table = function (name, model, mapping, primary) {
@@ -446,7 +482,6 @@ var sqlite3Context = function (connectionString, options) {
                 }
 
                 var inferred = inferToConvertable(tableName, column, row[column]);
-                //console.log(inferred);
                 value.push(inferred);
             }
 
@@ -576,22 +611,9 @@ var sqlite3Context = function (connectionString, options) {
 
         var accept = this.accept = function () {
             if (changed) {
-                database.prepare("DELETE FROM 'entities_master'").run(function () {
-                    var query = database.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'");
-                    query.all(function (err, rows) {
-                        if (err) sqlite3Context.emit("error", err);
-                        for (var i in rows) {
-                            if (rows[i].name == "sqlite_sequence" || rows[i].name == "entities_master") {
-                                continue;
-                            }
-
-                            var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", rows[i].sql);
-                            database.prepare("INSERT INTO 'entities_master' (name, hash, salt) VALUES (?, ?, ?)", rows[i].name, hmac.Data.toString(), hmac.Salt).run();
-                        }
-
-                        sqlite3Context.migrated = true;
-                        createMappings();
-                    });
+                master.update(function () {
+                    sqlite3Context.migrated = true;
+                    createMappings();
                 });
                 return;
             }
@@ -634,9 +656,9 @@ var sqlite3Context = function (connectionString, options) {
                         continue;
                     }
 
-                    compareMaster(tableRow.name, tableRow.sql, function (valid) {
+                    master.compare(tableRow.name, tableRow.sql, function (valid) {
                         validated++;
-                        if (!valid) migrationNeeded.push(tableRow.name);
+                        if (!valid) migrationNeeded.push({name: tableRow.name, reason: "Table has been altered outside of it's object."});
                         if (validated + 2 == rows.length) if (callback) callback(migrationNeeded);
                     });
                 }
@@ -651,27 +673,13 @@ var sqlite3Context = function (connectionString, options) {
                 var sql = createTable(tableObject);
                 sql = sql.replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE"); // TODO: Dirty, fix this! SQLite 3 ommits the IF NOT EXISTS part in master
 
-                compareMaster(tableObject.name, sql, function (valid) {
+                master.compare(tableObject.name, sql, function (valid) {
                     validated++;
-                    if (!valid) migrationNeeded.push(tableObject.name);
+                    if (!valid) migrationNeeded.push({name: tableObject.name, reason: "Table object has been altered."});
                     if (validated == tables.length) if (callback) callback(migrationNeeded);
                 });
             }
         }
-
-        var compareMaster = function (name, sql, callback) {
-            database.prepare("SELECT name, hash, salt FROM entities_master WHERE name=?", name).all(function (err, row) {
-                if (err) sqlite3Context.emit("error", err);
-                var hmac = new Blackfeather.Security.Cryptology.Hmac().Compute("table_hash", sql, row[0].salt);
-
-                if (hmac.Data.toString() != row[0].hash) {
-                    if (callback) callback(false);
-                    return;
-                }
-
-                if (callback) callback(true);
-            });
-        };
 
         var executeAutoMigration = function () {
             if (!options || !options.autoMigration) return;
