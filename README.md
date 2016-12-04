@@ -115,7 +115,7 @@ WARNING: THERE IS NO DATA MIGRATION SUPPORT FOR DROP & CREATE. ALL DATA WILL BE 
 
 ```javascript
   var entities = require('sqlite3-entities');
-  var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
+  var context = new entities.database("test.db", { cached: true, migration: entities.migration.manual });
 
   context.table("test_table", {
     id: 0,
@@ -154,10 +154,9 @@ WARNING: THERE IS NO DATA MIGRATION SUPPORT FOR DROP & CREATE. ALL DATA WILL BE 
     });
   });
 
-  context.once("migration", function(differences) {
+  context.once("migration", function(migration, differences) {
     console.log(differences);
 
-    var migration = new context.migration();
     for (var i = 0; i <= differences.length - 1; i++) {
         switch (differences[i]) {
             case "test_table2":
