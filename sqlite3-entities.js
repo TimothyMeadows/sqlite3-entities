@@ -214,8 +214,8 @@ var sqlite3Context = function (connectionString, options) {
                     }
                 }
 
-                ensure(alters, 0, function() {
-                    if (callback) callback();       
+                ensure(alters, 0, function () {
+                    if (callback) callback();
                 });
             }
         });
@@ -697,7 +697,7 @@ var sqlite3Context = function (connectionString, options) {
                     master.compare(tableRow.name, tableRow.sql, function (valid) {
                         validated++;
                         if (!valid) {
-                            var migrationFailure = { name: tableRow.name, reason: "Table has been altered outside of it's object." };
+                            var migrationFailure = { name: tableRow.name, type: "physical", reason: "Table has been altered outside of it's object." };
                             if (migrationNeeded.indexOf(migrationFailure) == -1) migrationNeeded.push(migrationFailure);
                         }
 
@@ -718,7 +718,7 @@ var sqlite3Context = function (connectionString, options) {
                 master.compare(tableObject.name, sql, function (valid) {
                     validated++;
                     if (!valid) {
-                        var migrationFailure = { name: tableObject.name, reason: "Table has been altered by it's object." };
+                        var migrationFailure = { name: tableObject.name, type: "object", reason: "Table has been altered by it's object." };
                         if (migrationNeeded.indexOf(migrationFailure) == -1) migrationNeeded.push(migrationFailure);
                     }
                     if (validated == tables.length) if (callback) callback(migrationNeeded);
@@ -740,16 +740,20 @@ var sqlite3Context = function (connectionString, options) {
                 case 3:
                     var altered = 0;
                     for (var i in differences) {
-                        alterTableFromObject(differences[i].name, function() {
-                            altered++;
-                            
-                            if (altered == differences.length) {
-                                master.update(function() {
-                                    sqlite3Context.migrated = true;
-                                    createMappings();
-                                })
-                            }
-                        });
+                        if (differences[i].type == "object") {
+                            alterTableFromObject(differences[i].name, function () {
+                                altered++;
+
+                                if (altered == differences.length) {
+                                    master.update(function () {
+                                        sqlite3Context.migrated = true;
+                                        createMappings();
+                                    });
+                                }
+                            });
+                        } else {
+                            throw "A table has been altered outside of it's model. This can not be changed.";
+                        }
                     }
             }
         };
