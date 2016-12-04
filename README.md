@@ -1,4 +1,7 @@
 # SQLite 3 Async Entities in JavaScript / Node.js
+#Dependancies
+sqlite3 https://github.com/mapbox/node-sqlite3
+
 #Installing
 ##Node.js
 ###https://www.npmjs.com/package/sqlite3-entities
