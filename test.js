@@ -1,5 +1,5 @@
 var databaseContext = require('./sqlite3-entities');
-var context = new databaseContext("test.db", { cached: true, autoMigration: false });
+var context = new databaseContext("test.db", { cached: true, autoMigration: 3 });
 
 context.table("test_table", {
     id: 0,

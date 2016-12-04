@@ -185,29 +185,65 @@ var sqlite3Context = function (connectionString, options) {
         throw "Unable to convert an unknown type.";
     }
 
-    var createTable = function (tableModel) {
-        if (!tableModel["name"] || !tableModel["scheme"]) throw "Invalid table model!";
+    var alterTableFromObject = function (tableName, callback) {
+        database.prepare("SELECT name, sql, object FROM entities_master WHERE name=?", tableName).all(function (err, row) {
+            if (err) sqlite3Context.emit("error", err);
 
-        var createTableProperty = function (name, value, mapping) {
-            var property = name + " ";
-            if (mapping) {
-                if (mapping["type"]) {
-                    property += mapping.type;
-                } else {
-                    property += inferType(value);
-                }
+            if (row[0].name == tableName) {
+                var tableObject = null;
+                var alters = [];
 
-                if (mapping["null"]) {
-                    if (mapping.null == false) {
-                        property += " NOT NULL";
+                for (var n in tables) {
+                    if (tables[n].name == tableName) {
+                        tableObject = tables[n];
                     }
                 }
+
+                if (tableObject == null) throw "Unable to find scheme for '" + tableName + "'.";
+                var originalTableObject = JSON.parse(row[0].object);
+                for (var i in tableObject.scheme) {
+                    var found = false;
+                    for (var x in originalTableObject) {
+                        if (i == x) {
+                            found = true;
+                        }
+                    }
+
+                    if (!found) {
+                        alters.push(database.prepare("ALTER TABLE '" + tableName + "' ADD COLUMN " + createTableProperty(i, tableObject.scheme, tableObject.mapping)));
+                    }
+                }
+
+                ensure(alters, 0, function() {
+                    if (callback) callback();       
+                });
+            }
+        });
+    };
+
+    var createTableProperty = function (name, value, mapping) {
+        var property = name + " ";
+        if (mapping) {
+            if (mapping["type"]) {
+                property += mapping.type;
             } else {
                 property += inferType(value);
             }
 
-            return property;
-        };
+            if (mapping["null"]) {
+                if (mapping.null == false) {
+                    property += " NOT NULL";
+                }
+            }
+        } else {
+            property += inferType(value);
+        }
+
+        return property;
+    };
+
+    var createTable = function (tableModel) {
+        if (!tableModel["name"] || !tableModel["scheme"]) throw "Invalid table model!";
 
         var sql = "CREATE TABLE IF NOT EXISTS '" + tableModel.name + "' (";
         var constraints = "";
@@ -642,6 +678,8 @@ var sqlite3Context = function (connectionString, options) {
     var migrate = function () {
         var physicalMigrationValid = false;
         var objectMigrationValid = false;
+        var physicalMigrationChecked = false;
+        var objectMigrationChecked = false;
         var migrationNeeded = [];
 
         var comparePhysicalMigration = function (callback) {
@@ -658,7 +696,11 @@ var sqlite3Context = function (connectionString, options) {
 
                     master.compare(tableRow.name, tableRow.sql, function (valid) {
                         validated++;
-                        if (!valid) migrationNeeded.push({name: tableRow.name, reason: "Table has been altered outside of it's object."});
+                        if (!valid) {
+                            var migrationFailure = { name: tableRow.name, reason: "Table has been altered outside of it's object." };
+                            if (migrationNeeded.indexOf(migrationFailure) == -1) migrationNeeded.push(migrationFailure);
+                        }
+
                         if (validated + 2 == rows.length) if (callback) callback(migrationNeeded);
                     });
                 }
@@ -675,13 +717,16 @@ var sqlite3Context = function (connectionString, options) {
 
                 master.compare(tableObject.name, sql, function (valid) {
                     validated++;
-                    if (!valid) migrationNeeded.push({name: tableObject.name, reason: "Table object has been altered."});
+                    if (!valid) {
+                        var migrationFailure = { name: tableObject.name, reason: "Table has been altered by it's object." };
+                        if (migrationNeeded.indexOf(migrationFailure) == -1) migrationNeeded.push(migrationFailure);
+                    }
                     if (validated == tables.length) if (callback) callback(migrationNeeded);
                 });
             }
         }
 
-        var executeAutoMigration = function () {
+        var executeAutoMigration = function (differences) {
             if (!options || !options.autoMigration) return;
             sqlite3Context.migrated = true;
 
@@ -693,11 +738,24 @@ var sqlite3Context = function (connectionString, options) {
                     seed();
                     break;
                 case 3:
-                    throw "This migration action has not been created yet!";
+                    var altered = 0;
+                    for (var i in differences) {
+                        alterTableFromObject(differences[i].name, function() {
+                            altered++;
+                            
+                            if (altered == differences.length) {
+                                master.update(function() {
+                                    sqlite3Context.migrated = true;
+                                    createMappings();
+                                })
+                            }
+                        });
+                    }
             }
         };
 
         comparePhysicalMigration(function (differences) {
+            physicalMigrationChecked = true;
             if (differences.length == 0) {
                 physicalMigrationValid = true;
 
@@ -707,11 +765,12 @@ var sqlite3Context = function (connectionString, options) {
                 return;
             }
 
-            if (options && options.autoMigration) return executeAutoMigration();
-            sqlite3Context.emit("migration", differences);
+            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.autoMigration)) return executeAutoMigration(differences);
+            if ((physicalMigrationChecked && objectMigrationChecked)) sqlite3Context.emit("migration", differences);
         });
 
         compareModelMigration(function (differences) {
+            objectMigrationChecked = true;
             if (differences.length == 0) {
                 objectMigrationValid = true;
 
@@ -721,8 +780,8 @@ var sqlite3Context = function (connectionString, options) {
                 return;
             }
 
-            if (options && options.autoMigration) return executeAutoMigration();
-            sqlite3Context.emit("migration", differences);
+            if ((physicalMigrationChecked && objectMigrationChecked) && (options && options.autoMigration)) return executeAutoMigration(differences);
+            if ((physicalMigrationChecked && objectMigrationChecked)) sqlite3Context.emit("migration", differences);
         })
     }
 
