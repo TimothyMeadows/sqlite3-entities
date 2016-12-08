@@ -73,7 +73,7 @@ var sqlite3Context = function (connectionString, options) {
             database.prepare("SELECT name, sql, object FROM entities_master WHERE name=?", name).all(function (err, row) {
                 if (err) sqlite3Context.emit("error", err);
 
-                if (row[0].name == name) {
+                if (row && row[0].name == name) {
                     if (row[0].sql == sql) {
                         if (callback) callback(true);
                         return;
