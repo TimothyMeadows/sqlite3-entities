@@ -98,6 +98,24 @@ var sqlite3Context = function (connectionString, options) {
         tables.push(tableObject);
     }
 
+    var inferPrimary = function (tableName) {
+        var tableObject = null;
+        for (var n in tables) {
+            if (tables[n].name == tableName) {
+                tableObject = tables[n].scheme;
+            }
+        }
+
+        if (tableObject == null) throw "Unable to find table '" + tableObject + "'";
+        if (tableObject.primary) {
+            return tableObject.primary;
+        }
+
+        for (var n in tableObject) {
+            return n;
+        }
+    }
+
     var inferType = function (value) {
         if (typeof value == "boolean") return "INTEGER";
         if (/^-?[\d.]+(?:e-?\d+)?$/.test(value)) return "INTEGER";
@@ -539,7 +557,12 @@ var sqlite3Context = function (connectionString, options) {
             var values = "";
             var value = [];
 
+            var primaryKey = inferPrimary(tableName);
             for (var column in row) {
+                if (column == primaryKey) {
+                    continue;
+                }
+
                 if (columns == "") {
                     columns = column;
                     values = "?";

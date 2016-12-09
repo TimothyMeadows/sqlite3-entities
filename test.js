@@ -1,6 +1,11 @@
 var entities = require('./sqlite3-entities');
 var context = new entities.database("test.db", { cached: true, migration: entities.migration.alter });
 
+var testTable2 = function() {
+    this.id = 0;
+    this.uid = "";
+}
+
 context.table("test_table", {
     id: 0,
     uid: "",
@@ -13,10 +18,7 @@ context.table("test_table", {
     id2: {foreign:{table:"test_table2", column: "id"}}
 });
 
-context.table("test_table2", {
-    id: 0,
-    uid: ""
-});
+context.table("test_table2", new testTable2());
 
 context.once("ready", function () {
     if (context.migrated) console.log("database was migrated!");
@@ -39,6 +41,14 @@ context.once("ready", function () {
                 console.log(rows.where((t) => t.created == 0).first((t) => t.uid == "test123"));
             });
         });
+
+        var tt2 = new testTable2();
+        tt2.uid = "123water";
+
+        context.test_table2.add(tt2);
+
+        tt2.uid = "water123";
+        context.test_table2.add(tt2);
     });
 });
 
