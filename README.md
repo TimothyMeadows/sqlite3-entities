@@ -1,11 +1,11 @@
 # SQLite 3 Async Entities in JavaScript / Node.js
 [![NPM](https://nodei.co/npm/sqlite3-entities.png?downloads=true&downloadRank=true)](https://nodei.co/npm/sqlite3-entities/)
-#Installing
-##Node.js
+# Installing
+## Node.js
 ```bash
   npm install sqlite3-entities --save
 ```
-##Browser
+## Browser
 ```bash
 npm install -g browserify
 git clone https://github.com/TimothyMeadows/sqlite3-entities
@@ -20,16 +20,16 @@ Note: Due to the browsers lack of traditional filesystem, you need to use memory
   var entities = require('sqlite3-entities');
   var context = new entities.database(":memory:");
 ```
-##Source
+## Source
 ```bash
   git clone https://github.com/TimothyMeadows/sqlite3-entities
 ```
-#Dependancies
+# Dependancies
 [node-sqlite3](https://github.com/mapbox/node-sqlite3)
 
 [![Build Status](https://travis-ci.org/mapbox/node-sqlite3.svg?branch=master)](https://travis-ci.org/mapbox/node-sqlite3)
 [![Dependencies](https://david-dm.org/mapbox/node-sqlite3.svg)](https://david-dm.org/mapbox/node-sqlite3)
-#Tables
+# Tables
 I felt it was important that tables could be defined in it's simplest form in a standard object notation. While complex mapping / indexing might be needed at a more advanced level. It didn't have to be "in your face" at all times. Types are inferred by there value. However, those values are not actually treated as defaults. This may change in the future. Similar to other ORM / Entity style frameworks. I wanted advanced "mapping" to be handeled in it's own object allowing for table objects, and, matching map objects when needed.
 
 ```javascript
@@ -95,7 +95,7 @@ Finally, Foreign keys, and, unqiue constraints can be declared using the mapping
   });
 ```
 
-#Ready & Error
+# Ready & Error
 In the unfortunite event an exception occurs. You can use the error event to listen for what occured. More importantly, you will need to listen for the ready event before you can access entities you would like to use. This is due to the pure async nature of the library. Additionally, you can use the migrated, and, created properties to determine if the data was just created, or, migrated and may be in need of seeding.
 
 ```javascript
@@ -125,7 +125,7 @@ In the unfortunite event an exception occurs. You can use the error event to lis
     console.log(err);
   });
 ```
-#Migration
+# Migration
 
 Automatic migration support exists for halt, drop & create, and, alter. Note that if you use alter, and a physical migration is detected it will trigger the migration event.
 You can also choose to use "manual" migration by specifying migration.manual or not specifying the migration option at all. Because SQLite3 does not support dropping, or, 
@@ -197,7 +197,7 @@ WARNING: THERE IS NO DATA MIGRATION SUPPORT FOR DROP & CREATE. ALL DATA WILL BE 
   });
 ```
 
-#Execution Chains (psudeo Linq)
+# Execution Chains (psudeo Linq)
 All table mappings support async based execution chains. However, due to the async nature if you directly chain statements at the table mapping level they will not contain results from the previous execution. The exception to this being select() which lets you control which columns which are selected in future statements in the same chain.
 
 Chained execution passed the first table mapping execution (I.E. the results returned from async) are synchronis, they can be chained, and, do include results from the previous exection.
