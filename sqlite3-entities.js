@@ -733,7 +733,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var all = this.all = function (callback) {
-            database.prepare("SELECT " + tableaddClusterEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
