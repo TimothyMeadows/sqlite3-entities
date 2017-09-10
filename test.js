@@ -38,16 +38,21 @@ context.once("ready", function () {
         }, function() {
             console.log("row added!");
             context.test_table.select(["id", "uid", "array", "object", "active"]).where((t) => t.active, function(rows) {
-                console.log(rows.where((t) => t.created == 0).first((t) => t.uid == "test123"));
+                var row = rows.where((t) => t.created == 0).first((t) => t.uid == "test123");
+                console.log(row);
+                
+                row.active = false;
+                context.test_table.update(row, (t) => t.uid == "test123", function() {
+                    context.test_table.select(["id", "uid", "array", "object", "active"]).first((t) => t.uid == "test123", function (row) {
+                        console.log(row);
+                    });
+                });
             });
         });
 
         var tt2 = new testTable2();
         tt2.uid = "123water";
 
-        context.test_table2.add(tt2);
-
-        tt2.uid = "water123";
         context.test_table2.add(tt2);
     });
 });

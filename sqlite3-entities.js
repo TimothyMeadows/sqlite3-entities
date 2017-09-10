@@ -583,6 +583,52 @@ var sqlite3Context = function (connectionString, options) {
             return tableEntity;
         }
 
+        var update = this.update = function (row, condition, callback) {
+            var columns = "";
+            var value = [];
+
+            var primaryKey = inferPrimary(tableName);
+            database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
+                if (err) sqlite3Context.emit("error", err);
+
+                var updateEntity = null;
+                for (var i in rows) {
+                    var entity = createRowEntity(tableName, rows[i]);
+                    if (condition(entity)) {
+                        updateEntity = entity;
+                        break;
+                    }
+                }
+
+                if (!updateEntity) {
+                    sqlite3Context.emit("error", "can't find primary key for update entity!");
+                    return;
+                }
+
+                for (var column in row) {
+                    if (column == primaryKey) {
+                        continue;
+                    }
+    
+                    if (columns == "") {
+                        columns = column + " = ?";
+                    } else {
+                        columns += ", " + column + " = ?";
+                    }
+    
+                    var inferred = inferToConvertable(tableName, column, row[column]);
+                    value.push(inferred);
+                }
+
+                database.prepare("UPDATE '" + tableName + "' SET " + columns + " WHERE " + primaryKey + " = " + row[primaryKey]).run(value, function (err) {
+                    if (err) sqlite3Context.emit("error", err);
+                    if (callback) callback();
+                });
+            });
+
+            return tableEntity;
+        }
+
         var remove = this.remove = function (condition, callback) {
             database.prepare("SELECT * FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
@@ -687,7 +733,7 @@ var sqlite3Context = function (connectionString, options) {
         }
 
         var all = this.all = function (callback) {
-            database.prepare("SELECT " + tableEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
+            database.prepare("SELECT " + tableaddClusterEntity.rowsColumns + " FROM '" + tableName + "'").all(function (err, rows) {
                 if (err) sqlite3Context.emit("error", err);
                 if (callback) callback(rows);
             });
