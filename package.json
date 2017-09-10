@@ -1,6 +1,6 @@
 {
   "name": "sqlite3-entities",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "sqlite3-entities.js",
   "license": "MIT",
   "author": {
